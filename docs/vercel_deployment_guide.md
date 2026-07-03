@@ -27,7 +27,7 @@ Aynı ekranda **"Environment Variables"** sekmesini aç ve kendi `.env.local` do
 | :--- | :--- |
 | `NEXT_PUBLIC_API_URL` | `http://localhost:3001` *(Eğer backend lokalindeyse bunu yaz, backend'i internete açarsan o linki yazacaksın)* |
 | `NEXT_PUBLIC_CSPR_CLICK_APP_NAME` | `Sentinel AI` |
-| `NEXT_PUBLIC_CSPR_CLICK_APP_ID` | `8f76a652-4332-44cd-9c97-585550d7` *(Senin App ID'n)* |
+| `NEXT_PUBLIC_CSPR_CLICK_APP_ID` | `your_cspr_click_app_id_here` *(Get yours at [cspr.click](https://cspr.click))* |
 | `NEXT_PUBLIC_CASPER_CHAIN_NAME` | `casper-test` |
 | `NEXT_PUBLIC_CASPER_NODE_URL` | `https://rpc.testnet.casperlabs.io/rpc` |
 
