@@ -2,23 +2,35 @@
 
 **"Don't invest first. Investigate first."**
 
+[![Casper AI Toolkit](https://img.shields.io/badge/Casper%20AI%20Toolkit-Powered-red?style=for-the-badge)](https://www.casper.network/ai#toolkit)
+[![x402 Protocol](https://img.shields.io/badge/x402-Micropayments-blue?style=for-the-badge)](https://docs.cspr.cloud/x402-facilitator-api/reference)
+[![MCP Native](https://img.shields.io/badge/MCP-Native-green?style=for-the-badge)](https://docs.cspr.cloud/agentic-tools/mcp-server)
+
 Sentinel AI is an autonomous, agentic system built for the **Casper Agentic Buildathon**. It protects investors in the DeFi and RWA (Real World Assets) space by performing autonomous due diligence on projects before capital is deployed.
 
-This project natively integrates the **Casper Builder Toolkit (cspr.build)** specifically designed for AI agents:
-- **CSPR.click SKILL**: For seamless Casper Wallet authentication.
-- **Odra Framework SKILL**: For writing robust, secure Smart Contracts (`Marketplace` and `Registry`).
-- **CSPR.cloud MCP (Model Context Protocol)**: To allow the AI agent to index and fetch on-chain data APIs.
-- **CSPR.trade MCP**: Used by the AI to fetch DEX trading and market liquidity data autonomously.
-- **x402 Facilitator**: To seamlessly handle autonomous x402 micro-payments for premium intelligence.
+## 🧰 Casper AI Toolkit Integration
+
+This project is built on the full **[Casper AI Toolkit](https://www.casper.network/ai#toolkit)** — the complete developer infrastructure for autonomous AI agents on Casper:
+
+| Component | Type | Purpose |
+|---|---|---|
+| [x402 Facilitator](https://docs.cspr.cloud/x402-facilitator-api/reference) | Micropayments | Autonomous pay-per-request for premium data |
+| [Casper x402 Examples](https://github.com/make-software/casper-x402) | Reference | JS/Go implementation of x402 on Casper |
+| [Casper MCP Server](https://docs.cspr.cloud/agentic-tools/mcp-server) | MCP / Blockchain | On-chain queries via Model Context Protocol |
+| [CSPR.trade MCP](https://mcp.cspr.trade/) | MCP / DEX | Token prices, swap quotes, liquidity analysis |
+| [CSPR.click Agent Skill](https://docs.cspr.click/documentation/ai-agent-skills) | Skill / Integration | Wallet connection & transaction signing |
+| [CSPR.cloud Agent Skill](https://cspr.cloud/skill.md) | Middleware / APIs | REST, Streaming, and Node APIs |
+| [Odra Framework](https://odra.dev/llms.txt) | Smart Contracts | Contract development with AI-discoverability |
+| [casper-eip-712](https://github.com/casper-ecosystem/casper-eip-712) | Signing / Typed Data | EIP-712 signatures for x402 payments |
 
 ## The Problem
 When a user wants to invest in a new DeFi protocol or tokenized real-world asset, they need to verify audits, team backgrounds, liquidity, and physical assets. This takes hours. Sentinel AI automates this completely.
 
 ## The Solution
-1. **Gather Free Data**: The agent scrapes standard open-source information.
-2. **Evaluate Confidence**: The AI determines if it has enough data to make a reliable recommendation.
-3. **Purchase Intelligence via x402**: If confidence is low, the agent uses its Casper Wallet to pay for premium data (e.g., Liquidity Analysis or Deed Check) via the Odra Marketplace Contract.
-4. **Final Decision**: Synthesizes all gathered intelligence and saves an immutable record on the Casper Network.
+1. **Gather Free Data**: The agent queries on-chain data via **Casper MCP Server** and market data via **CSPR.trade MCP**.
+2. **AI Analysis**: **Google Gemini** analyzes the collected data and evaluates confidence.
+3. **Purchase Intelligence via x402**: If confidence is low, the agent autonomously pays for premium intelligence using the **x402 Facilitator** — signed with **casper-eip-712** typed-data.
+4. **Final Decision**: Synthesizes all gathered intelligence and delivers a comprehensive due diligence report.
 
 ---
 
@@ -51,7 +63,7 @@ cargo test
 ```
 
 ### 3. Backend (Agent Orchestrator) Setup
-The backend runs the ReAct LangChain agent that makes economic decisions.
+The backend runs the Gemini-powered AI agent with MCP tool integration.
 ```bash
 cd backend
 
@@ -99,7 +111,7 @@ Before running the project, you must set up environment variables:
 # Backend
 cd backend
 cp .env.example .env
-# Edit .env with your API keys
+# Edit .env with your CSPR.cloud API key and Google Gemini API key
 
 # Frontend
 cd frontend
@@ -109,32 +121,59 @@ cp .env.local.example .env.local
 
 > ⚠️ **Never commit `.env` files or private keys.** The `.gitignore` is pre-configured to exclude these.
 
-For a complete list of all configuration variables and how to obtain API keys, see **[docs/configuration.md](docs/configuration.md)**.
+For the complete setup guide with all API keys and integrations, see **[docs/testnet_deployment_guide.md](docs/testnet_deployment_guide.md)**.
 
-## 🧪 Comprehensive Test Coverage
+## 🏗️ Architecture
 
-To ensure Sentinel AI is robust and production-ready, we have implemented tests across all three main components:
+```
+┌──────────────────────────────────────────────────────────┐
+│                     Frontend (Next.js)                    │
+│              CSPR.click SDK · Wallet Connect              │
+└──────────────────────┬───────────────────────────────────┘
+                       │ POST /api/investigate
+┌──────────────────────▼───────────────────────────────────┐
+│                Backend (Express + TypeScript)              │
+│                                                           │
+│  ┌─────────────────────────────────────────────────────┐  │
+│  │           Gemini AI (ReAct Agent Loop)              │  │
+│  │   Observe → Think → Act → Report                   │  │
+│  └────────┬──────────┬─────────────┬──────────────────┘  │
+│           │          │             │                      │
+│  ┌────────▼──┐ ┌─────▼─────┐ ┌────▼──────┐              │
+│  │ Casper    │ │ CSPR.trade│ │ x402      │              │
+│  │ MCP      │ │ MCP       │ │ Facilitator│              │
+│  │ Server   │ │ Server    │ │           │              │
+│  └────┬─────┘ └────┬──────┘ └────┬──────┘              │
+│       │             │             │                      │
+└───────┼─────────────┼─────────────┼──────────────────────┘
+        │             │             │
+   ┌────▼─────────────▼─────────────▼────┐
+   │        Casper Network (Testnet)      │
+   │   Accounts · Deploys · DEX · Tokens  │
+   └──────────────────────────────────────┘
+```
+
+## 🧪 Test Coverage
 
 ### Smart Contracts (Unit Tests)
-Odra Framework unit tests validate the logic of the Marketplace and Registry.
 ```bash
 cd contracts
 cargo test
 ```
 
 ### Backend (Integration & API Tests)
-Using `Jest` and `Supertest`, we validate the Agent's decision loop, ensuring it correctly decides to buy "Liquidity Checks" for DeFi, and "Deed Checks" for RWA.
 ```bash
 cd backend
 npm run test
 ```
 
 ### Frontend (Component & E2E Tests)
-Using `@testing-library/react` and `jest`, we ensure the UI components (Project Input, cspr.click Wallet Connect, Live Thinking Log) render and react to user interactions correctly.
 ```bash
 cd frontend
 npm run test
 ```
 
-## Architecture
-See the `docs/architecture.md` file for an in-depth look at how the Agent, Odra Contracts, and Casper Toolkits interact.
+## 📚 Documentation
+- [Testnet Deployment Guide](docs/testnet_deployment_guide.md)
+- [LLM Integration Guide](docs/llm_integration_guide.md)
+- [Vercel Deployment Guide](docs/vercel_deployment_guide.md)

@@ -1,6 +1,6 @@
 # Sentinel AI - Testnet Deployment & Integration Guide
 
-For the project to be fully functional and communicate with the outside world (Casper Network, data providers, etc.), it requires API keys and wallets. This guide explains step-by-step what you need to do to deploy the project on the testnet.
+This project is built on top of the [Casper AI Toolkit](https://www.casper.network/ai#toolkit). For the project to be fully functional, it requires API keys, wallets, and connections to the Casper Network's AI infrastructure. This guide explains step-by-step what you need.
 
 ## 🟢 Step 1: Casper Wallet and Testnet Balance (For Users)
 Users need a wallet to log in to the system.
@@ -9,25 +9,33 @@ Users need a wallet to log in to the system.
 3. Go to the [Casper Testnet Faucet](https://testnet.cspr.live/tools/faucet).
 4. Paste your wallet's Public Key and click "Request Tokens" to get free test CSPR coins.
 
-## 🟢 Step 2: CSPR.cloud Integration (For On-Chain Data)
-CSPR.cloud is required for the agent to quickly read data on the Casper network.
+## 🟢 Step 2: CSPR.cloud API Key (Core Requirement)
+CSPR.cloud is the central middleware for the Casper AI Toolkit. A single API key powers:
+- **REST API** — indexed on-chain data (accounts, deploys, tokens, validators)
+- **Casper MCP Server** — AI agent on-chain queries via Model Context Protocol
+- **x402 Facilitator** — autonomous micro-payment verification and settlement
+- **Streaming API** — real-time SSE feeds for monitoring
+
 1. Go to [cspr.cloud](https://cspr.cloud) and create a Developer account.
 2. Click the **"Create New Project"** button on the dashboard.
 3. Name the project `Sentinel AI Testnet`.
 4. Copy the generated **API Key**.
-5. Open the `backend/.env` file in your project and update this line:
+5. Open the `backend/.env` file in your project and update:
    ```env
    CSPR_CLOUD_API_KEY=your_cspr_cloud_api_key_here
    ```
 
-## 🟢 Step 2.5: CSPR.trade API (For Market and DEX Data)
-Required for the agent to read token prices and DEX data on the Casper network.
-1. Go to [cspr.trade](https://cspr.trade) to get API access (or use the key provided during the hackathon).
-2. Open your `backend/.env` file and update:
-   ```env
-   CSPR_TRADE_API_URL=https://api.cspr.trade/v1
-   CSPR_TRADE_API_KEY=your_cspr_trade_api_key_here
-   ```
+This single key is used across all CSPR.cloud services. No separate x402 or MCP keys are needed.
+
+## 🟢 Step 2.5: CSPR.trade MCP (For Market and DEX Data)
+Required for the agent to read token prices, get swap quotes, and analyze trades on the Casper DEX.
+- **Public endpoint** — no API key required.
+- **22 public tools** available (get_tokens, get_quote, analyze_trade, get_pair_price_history, etc.)
+- Your `backend/.env` already has the correct URL:
+  ```env
+  CSPR_TRADE_MCP_URL=https://mcp.cspr.trade/mcp
+  ```
+- Full tool reference: [mcp.cspr.trade/SKILL.md](https://mcp.cspr.trade/SKILL.md)
 
 ## 🟢 Step 3: CSPR.click App ID (For User Login)
 This is required to manage the wallet connection popup (UI) for users.
@@ -56,16 +64,29 @@ Since the AI Agent will make its own payments (x402) autonomously, it needs its 
    AGENT_SECRET_KEY_PATH=./keys/secret_key.pem
    ```
 
-## 🟢 Step 5: x402 Facilitator (For Autonomous Payments)
-This infrastructure allows the agent to pay for premium data.
-1. Add the following information to your `backend/.env` file:
-   ```env
-   X402_FACILITATOR_URL=https://x402.cspr.build
-   X402_FACILITATOR_API_KEY=enter_your_testnet_key_here
-   ```
+## 🟢 Step 5: x402 Facilitator (Autonomous Payments)
+The x402 protocol enables AI agents to pay for premium API data using HTTP 402 payment flows. Sentinel AI uses the **CSPR.cloud x402 Facilitator** — no separate API key is needed.
+
+**How it works:**
+1. Agent requests a paid API endpoint.
+2. Server responds with `402 Payment Required` + payment requirements.
+3. Agent signs a `PaymentPayload` (EIP-712 typed-data) with its wallet.
+4. Server forwards the signed payload to the facilitator for verification and on-chain settlement.
+5. Server returns the premium data.
+
+**Configuration** (already set in your `.env`):
+```env
+X402_FACILITATOR_URL=https://x402-facilitator.cspr.cloud
+```
+
+The facilitator authenticates using your `CSPR_CLOUD_API_KEY` via the `Authorization` header. The signing uses [casper-eip-712](https://github.com/casper-ecosystem/casper-eip-712) typed-data signatures with CEP-18 tokens.
+
+**References:**
+- [x402 Facilitator API Docs](https://docs.cspr.cloud/x402-facilitator-api/reference)
+- [Casper x402 Examples (JS/Go)](https://github.com/make-software/casper-x402)
 
 ## 🟢 Step 6: Deploying Smart Contracts to Testnet
-You need to deploy the contracts you wrote with Odra to the Casper Testnet. To sign the transaction, we will use the Agent wallet (Private Key) that we generated and funded in Step 4.
+You need to deploy the contracts you wrote with Odra to the Casper Testnet.
 1. Navigate to the `contracts` folder in your terminal.
 2. Build and deploy the contract to the testnet:
    ```bash
@@ -99,4 +120,20 @@ npm install
 npm run dev
 ```
 
-Go to `http://localhost:3000` in your browser. You can now connect your wallet, send requests to the agent, and watch the agent make payments through the contract using its own balance on the testnet!
+Go to `http://localhost:3000` in your browser. You can now connect your wallet, send requests to the agent, and watch the agent make payments through the x402 facilitator using its own balance on the testnet!
+
+---
+
+## 📚 Casper AI Toolkit References
+This project integrates the following components from the [Casper AI Toolkit](https://www.casper.network/ai#toolkit):
+
+| Component | Type | URL |
+|---|---|---|
+| x402 Facilitator | Micropayments | [docs.cspr.cloud/x402-facilitator-api](https://docs.cspr.cloud/x402-facilitator-api/reference) |
+| Casper x402 Examples | Reference | [github.com/make-software/casper-x402](https://github.com/make-software/casper-x402) |
+| Casper MCP Server | MCP / Blockchain | [mcp.testnet.cspr.cloud/mcp](https://mcp.testnet.cspr.cloud/mcp) |
+| CSPR.trade MCP | MCP / DEX | [mcp.cspr.trade/mcp](https://mcp.cspr.trade/mcp) |
+| CSPR.click Agent Skill | Skill / Integration | [docs.cspr.click/documentation/ai-agent-skills](https://docs.cspr.click/documentation/ai-agent-skills) |
+| CSPR.cloud Agent Skill | Middleware / APIs | [cspr.cloud/skill.md](https://cspr.cloud/skill.md) |
+| Odra Framework | Smart Contracts | [odra.dev/llms.txt](https://odra.dev/llms.txt) |
+| casper-eip-712 | Signing / Typed Data | [github.com/casper-ecosystem/casper-eip-712](https://github.com/casper-ecosystem/casper-eip-712) |
