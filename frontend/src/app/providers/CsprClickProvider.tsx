@@ -1,34 +1,24 @@
 'use client';
 
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode } from 'react';
+import dynamic from 'next/dynamic';
 
-// cspr.click SDK is compiled against React 18.
-// We load it at runtime to avoid React version conflicts.
+const ClickProvider = dynamic(
+  () => import('@make-software/csprclick-ui').then((mod) => mod.ClickProvider),
+  { ssr: false }
+);
+
 export default function CsprClickProvider({ children }: { children: ReactNode }) {
-  const initialized = useRef(false);
-
-  useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-
-    // Load cspr.click script at runtime
-    const script = document.createElement('script');
-    script.src = 'https://cdn.cspr.click/sdk/latest/csprclick.js';
-    script.async = true;
-    script.onload = () => {
-      // @ts-expect-error - cspr.click global SDK
-      if (window.CsprClick) {
-        // @ts-expect-error - cspr.click global SDK
-        window.CsprClick.init({
-          appName: 'Sentinel AI',
-          appId: 'csprclick-template',
-          contentMode: 'iframe',
-          providers: ['casper-wallet', 'ledger', 'casperdash', 'metamask-snap'],
-        });
-      }
-    };
-    document.head.appendChild(script);
-  }, []);
-
-  return <>{children}</>;
+  return (
+    <ClickProvider
+      options={{
+        appName: process.env.NEXT_PUBLIC_CSPR_CLICK_APP_NAME || 'Sentinel AI',
+        appId: process.env.NEXT_PUBLIC_CSPR_CLICK_APP_ID || 'csprclick-template',
+        contentMode: 'iframe',
+        providers: ['casper-wallet', 'ledger', 'casperdash', 'metamask-snap'],
+      }}
+    >
+      {children}
+    </ClickProvider>
+  );
 }
