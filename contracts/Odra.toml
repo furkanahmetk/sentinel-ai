@@ -1,0 +1,7 @@
+[[contracts]]
+name = "marketplace"
+fqn = "Marketplace"
+
+[[contracts]]
+name = "registry"
+fqn = "InvestigationRegistry"

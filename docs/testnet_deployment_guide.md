@@ -86,19 +86,48 @@ The facilitator authenticates using your `CSPR_CLOUD_API_KEY` via the `Authoriza
 - [Casper x402 Examples (JS/Go)](https://github.com/make-software/casper-x402)
 
 ## 🟢 Step 6: Deploying Smart Contracts to Testnet
-You need to deploy the contracts you wrote with Odra to the Casper Testnet.
-1. Navigate to the `contracts` folder in your terminal.
-2. Build and deploy the contract to the testnet:
+
+The contracts are deployed using a native Rust deploy binary powered by `odra-casper-livenet-env`.
+
+1. Navigate to the `contracts` folder.
+2. Configure the livenet environment file:
    ```bash
-   cargo odra build
-   cargo odra deploy -- --chain-name casper-test --secret-key ../backend/keys/secret_key.pem
+   # contracts/casper_livenet.env (already committed)
+   ODRA_CASPER_LIVENET_NODE_ADDRESS=https://node.testnet.casper.network/rpc
+   ODRA_CASPER_LIVENET_EVENTS_URL=https://node.testnet.casper.network/events
+   ODRA_CASPER_LIVENET_SECRET_KEY_PATH=../backend/keys/secret_key.pem
+   ODRA_CASPER_LIVENET_CHAIN_NAME=casper-test
    ```
-3. When the process is complete, the terminal will give you a `Contract Hash` (e.g., `hash-abc123...`).
-4. Open your `backend/.env` file and paste these hashes:
+3. Build the WASM artifacts first:
+   ```bash
+   cd contracts
+
+   ODRA_MODULE=Marketplace cargo build --release \
+     --target wasm32-unknown-unknown \
+     --bin sentinel_contracts_build_contract
+   cp target/wasm32-unknown-unknown/release/sentinel_contracts_build_contract.wasm wasm/Marketplace.wasm
+
+   ODRA_MODULE=InvestigationRegistry cargo build --release \
+     --target wasm32-unknown-unknown \
+     --bin sentinel_contracts_build_contract
+   cp target/wasm32-unknown-unknown/release/sentinel_contracts_build_contract.wasm wasm/InvestigationRegistry.wasm
+   ```
+4. Deploy both contracts (upgradeable) to Testnet:
+   ```bash
+   cargo run --bin deploy
+   ```
+5. The terminal will output the deployed package hashes, for example:
+   ```
+   💁  INFO : Contract "contract-package-e3ec7d5..." deployed.
+   Marketplace deployed at: Contract(ContractPackageHash(e3ec7d5...))
+   ```
+6. Update your `backend/.env` with these hashes:
    ```env
-   MARKETPLACE_CONTRACT_HASH=your_hash_value_1
-   REGISTRY_CONTRACT_HASH=your_hash_value_2
+   MARKETPLACE_CONTRACT_HASH=hash-<marketplace-package-hash>
+   REGISTRY_CONTRACT_HASH=hash-<registry-package-hash>
    ```
+
+> ✅ The contracts are already deployed for this project. See the [README](../README.md#-live-deployed-contracts-casper-testnet) for the live package hashes.
 
 ## 🟢 Step 7: AI Agent (LLM) Selection
 You need to define the AI model that will act as the brain of the system. Check out the [LLM Integration Guide](llm_integration_guide.md) to set up OpenAI, Gemini, Groq, or Ollama.
@@ -110,14 +139,15 @@ If all keys and hashes have been added to your `.env` files, the project is now 
 ```bash
 cd backend
 npm install
-npm run dev
+npm run build
+npm start             # → http://localhost:3001
 ```
 
 **Start the Frontend:**
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev           # → http://localhost:3000
 ```
 
 Go to `http://localhost:3000` in your browser. You can now connect your wallet, send requests to the agent, and watch the agent make payments through the x402 facilitator using its own balance on the testnet!

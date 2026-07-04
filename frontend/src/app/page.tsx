@@ -15,45 +15,53 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [result, setResult] = useState<InvestigationResult | null>(null);
-  const [activeAccount, setActiveAccount] = useState<string | null>(null);
+  const [activeAccount, setActiveAccount] = useState<{ address: string, provider: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const handleConnected = (evt: Event) => {
-      const detail = (evt as CustomEvent).detail;
-      const account = detail?.activeKey || detail?.publicKey;
-      if (account) setActiveAccount(account);
+    const syncAccount = () => {
+      if (!window.csprclick) return;
+      const account = window.csprclick.getActiveAccount();
+      if (account?.public_key) {
+        setActiveAccount({
+          address: account.public_key,
+          provider: account.provider || 'connected wallet'
+        });
+      } else {
+        setActiveAccount(null);
+      }
     };
 
-    const handleDisconnected = () => setActiveAccount(null);
+    // Initial check in case it's already loaded
+    setTimeout(syncAccount, 500);
+    setTimeout(syncAccount, 1500);
 
-    window.addEventListener('csprclick:signed_in', handleConnected);
-    window.addEventListener('csprclick:switched_account', handleConnected);
-    window.addEventListener('csprclick:signed_out', handleDisconnected);
-    window.addEventListener('csprclick:disconnected', handleDisconnected);
+    window.addEventListener('csprclick:signed_in', syncAccount);
+    window.addEventListener('csprclick:switched_account', syncAccount);
+    window.addEventListener('csprclick:signed_out', syncAccount);
+    window.addEventListener('csprclick:disconnected', syncAccount);
+    window.addEventListener('csprclick:loaded', syncAccount);
 
     return () => {
-      window.removeEventListener('csprclick:signed_in', handleConnected);
-      window.removeEventListener('csprclick:switched_account', handleConnected);
-      window.removeEventListener('csprclick:signed_out', handleDisconnected);
-      window.removeEventListener('csprclick:disconnected', handleDisconnected);
+      window.removeEventListener('csprclick:signed_in', syncAccount);
+      window.removeEventListener('csprclick:switched_account', syncAccount);
+      window.removeEventListener('csprclick:signed_out', syncAccount);
+      window.removeEventListener('csprclick:disconnected', syncAccount);
+      window.removeEventListener('csprclick:loaded', syncAccount);
     };
   }, []);
 
   const connectWallet = () => {
-    // @ts-expect-error - cspr.click global SDK loaded at runtime
-    if (window.CsprClick) {
-      // @ts-expect-error - cspr.click global SDK
-      window.CsprClick.signIn();
+    if (window.csprclick) {
+      window.csprclick.signIn();
     } else {
       alert('Casper Wallet SDK is loading, please try again in a moment.');
     }
   };
 
   const disconnectWallet = () => {
-    // @ts-expect-error - cspr.click global SDK
-    if (window.CsprClick) {
-      // @ts-expect-error - cspr.click global SDK
-      window.CsprClick.signOut();
+    if (window.csprclick) {
+      window.csprclick.signOut();
     }
     setActiveAccount(null);
   };
@@ -138,16 +146,38 @@ export default function Home() {
           </div>
           {activeAccount ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{
-                background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)',
-                borderRadius: '6px', padding: '6px 12px', fontSize: '12px', color: 'var(--success)',
-                fontFamily: "'Fira Code', monospace",
-              }}>
-                🔗 {activeAccount.substring(0, 8)}...{activeAccount.substring(activeAccount.length - 6)}
+              <div 
+                style={{
+                  background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)',
+                  borderRadius: '6px', padding: '6px 12px', fontSize: '12px', color: 'var(--success)',
+                  fontFamily: "'Fira Code', monospace", display: 'flex', flexDirection: 'column', gap: '2px',
+                  cursor: 'pointer', transition: 'all 0.2s'
+                }}
+                onClick={() => {
+                  navigator.clipboard.writeText(activeAccount.address);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                title="Click to copy address"
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                  <span style={{ fontSize: '9px', textTransform: 'uppercase', opacity: 0.8, color: 'var(--text-muted)' }}>
+                    {activeAccount.provider.replace('-', ' ')}
+                  </span>
+                  {copied && <span style={{ fontSize: '9px', color: 'var(--accent)', fontWeight: 'bold' }}>Copied!</span>}
+                </div>
+                <span>🔗 {activeAccount.address.substring(0, 8)}...{activeAccount.address.substring(activeAccount.address.length - 6)}</span>
               </div>
-              <button className="btn-connect" onClick={disconnectWallet} style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
-                Disconnect
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <button className="btn-connect" onClick={connectWallet} style={{ fontSize: '10px', padding: '4px 8px', minHeight: 'unset', height: '22px' }}>
+                  Change
+                </button>
+                <button className="btn-connect" onClick={disconnectWallet} style={{ fontSize: '10px', padding: '4px 8px', minHeight: 'unset', height: '22px', borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+                  Disconnect
+                </button>
+              </div>
             </div>
           ) : (
             <button className="btn-connect" onClick={connectWallet}>

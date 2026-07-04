@@ -1,5 +1,4 @@
 use odra::prelude::*;
-use odra::Mapping;
 use odra::casper_types::U512;
 
 #[odra::module]
@@ -9,6 +8,9 @@ pub struct Marketplace {
 
 #[odra::module]
 impl Marketplace {
+    #[odra(init)]
+    pub fn init(&mut self) {}
+
     pub fn purchase_service(&mut self, service_name: String, amount: U512) {
         let caller = self.env().caller().to_string();
         let key = format!("{}_{}", caller, service_name);

@@ -1,5 +1,4 @@
 use odra::prelude::*;
-use odra::Mapping;
 use odra::casper_types::U512;
 
 #[odra::module]
@@ -9,6 +8,9 @@ pub struct InvestigationRegistry {
 
 #[odra::module]
 impl InvestigationRegistry {
+    #[odra(init)]
+    pub fn init(&mut self) {}
+
     pub fn log_investigation(&mut self, project_id: String, risk_score: u8, confidence: u8, amount_spent: U512) {
         let record = format!(
             "{{\"risk_score\": {}, \"confidence\": {}, \"amount_spent\": \"{}\"}}",
