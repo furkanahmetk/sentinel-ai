@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+// @ts-ignore
+import { DeployUtil, CLPublicKey } from 'casper-js-sdk';
 
 interface InvestigationResult {
   score: number;
@@ -23,18 +25,35 @@ export default function Home() {
       if (!window.csprclick) return;
       const account = window.csprclick.getActiveAccount();
       if (account?.public_key) {
+        // Session timeout logic (30 minutes = 1800000 ms)
+        const SESSION_TIMEOUT = 1800000;
+        const lastActive = localStorage.getItem('cspr_last_active');
+        const now = Date.now();
+        
+        if (lastActive && (now - parseInt(lastActive, 10) > SESSION_TIMEOUT)) {
+          // Session expired
+          window.csprclick.signOut();
+          setActiveAccount(null);
+          localStorage.removeItem('cspr_last_active');
+          return;
+        }
+        
+        // Update session
+        localStorage.setItem('cspr_last_active', now.toString());
         setActiveAccount({
           address: account.public_key,
           provider: account.provider || 'connected wallet'
         });
       } else {
         setActiveAccount(null);
+        localStorage.removeItem('cspr_last_active');
       }
     };
 
-    // Initial check in case it's already loaded
+    // Initial checks and interval for session tracking
     setTimeout(syncAccount, 500);
     setTimeout(syncAccount, 1500);
+    const interval = setInterval(syncAccount, 60000); // check session every minute
 
     window.addEventListener('csprclick:signed_in', syncAccount);
     window.addEventListener('csprclick:switched_account', syncAccount);
@@ -43,6 +62,7 @@ export default function Home() {
     window.addEventListener('csprclick:loaded', syncAccount);
 
     return () => {
+      clearInterval(interval);
       window.removeEventListener('csprclick:signed_in', syncAccount);
       window.removeEventListener('csprclick:switched_account', syncAccount);
       window.removeEventListener('csprclick:signed_out', syncAccount);
@@ -51,9 +71,26 @@ export default function Home() {
     };
   }, []);
 
-  const connectWallet = () => {
+  const connectWallet = async () => {
     if (window.csprclick) {
-      window.csprclick.signIn();
+      try {
+        await window.csprclick.signIn();
+        // Give it a small delay for the SDK state to update, then sync manually
+        setTimeout(() => {
+          if (window.csprclick) {
+            const account = window.csprclick.getActiveAccount();
+            if (account?.public_key) {
+              localStorage.setItem('cspr_last_active', Date.now().toString());
+              setActiveAccount({
+                address: account.public_key,
+                provider: account.provider || 'connected wallet'
+              });
+            }
+          }
+        }, 500);
+      } catch (err) {
+        console.error("Wallet connection failed:", err);
+      }
     } else {
       alert('Casper Wallet SDK is loading, please try again in a moment.');
     }
@@ -64,20 +101,70 @@ export default function Home() {
       window.csprclick.signOut();
     }
     setActiveAccount(null);
+    localStorage.removeItem('cspr_last_active');
   };
 
   const startInvestigation = async () => {
+    if (!activeAccount) {
+      alert("Please connect your Casper Wallet first!");
+      return;
+    }
+
     setLoading(true);
     setLogs([]);
     setResult(null);
 
     try {
+      // 1. Construct the native Casper transfer for the Due Diligence fee
+      logs.push('💸 User: Requesting signature for 50 CSPR Due Diligence fee...');
+      
+      // The deployer wallet address where fees go
+      const DESTINATION_WALLET = '0163d8A06Bab82776ec0fA0b38F1306e4E6a944468609AdF5c0F8F5Ad592Ef5d63'; 
+      
+      const deployParams = new DeployUtil.DeployParams(
+        CLPublicKey.fromHex(activeAccount.address),
+        'casper-test',
+        1,
+        1800000 // 30 minutes TTL
+      );
+
+      // 50 CSPR fee = 50 * 10^9 motes
+      const amount = 50_000_000_000;
+      const transferDeployItem = DeployUtil.ExecutableDeployItem.newTransfer(
+        amount,
+        CLPublicKey.fromHex(DESTINATION_WALLET),
+        null,
+        1 // id
+      );
+
+      // Standard payment for native transfer gas is 0.1 CSPR
+      const payment = DeployUtil.standardPayment(100_000_000); 
+      const deploy = DeployUtil.makeDeploy(deployParams, transferDeployItem, payment);
+      const deployJson = DeployUtil.deployToJson(deploy);
+
+      // 2. Request user signature via CSPR.click
+      const sendResult = await window.csprclick.send(deployJson, activeAccount.address);
+      
+      if (!sendResult || !sendResult.deployHash) {
+        throw new Error("Transaction was cancelled or failed to send.");
+      }
+      
+      const deployHash = sendResult.deployHash;
+      setLogs((prev: string[]) => [...prev, `✅ User: Fee transaction sent! DeployHash: ${deployHash}`]);
+      setLogs((prev: string[]) => [...prev, `⏳ Agent: Verifying on-chain fee payment before proceeding...`]);
+
+      // 3. Trigger backend with the deployHash
       const res = await fetch('http://localhost:3001/api/investigate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, type }),
+        body: JSON.stringify({ url, type, deployHash }),
       });
+      
       const data = await res.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
       // Simulate streaming logs with delays
       for (let i = 0; i < data.logs.length; i++) {
@@ -87,8 +174,8 @@ export default function Home() {
 
       await new Promise((resolve) => setTimeout(resolve, 800));
       setResult(data.result);
-    } catch {
-      setLogs((prev: string[]) => [...prev, 'ERROR: Could not connect to Agent Backend.']);
+    } catch (err: any) {
+      setLogs((prev: string[]) => [...prev, `❌ ERROR: ${err.message}`]);
     }
 
     setLoading(false);
