@@ -68,7 +68,10 @@ sequenceDiagram
     participant Contracts
 
     User->>Frontend: Submit target + type
-    Frontend->>Backend: POST /api/investigate
+    Frontend->>Backend: Estimate Fee
+    Backend-->>Frontend: Maximum Budget (Base + x402 Buffer + 30% Margin)
+    User->>Frontend: Pay Maximum Budget via CSPR.click
+    Frontend->>Backend: POST /api/investigate (with Initial Fee Hash)
     
     Backend->>CasperMCP: Query account on-chain data
     Backend->>CSPRtrade: Query token prices & liquidity
@@ -78,16 +81,17 @@ sequenceDiagram
     Gemini-->>Backend: { confidence: 40, needsPremiumData: true }
     
     alt confidence < 80
-        Backend->>x402: Trigger micro-payment (0.02 CSPR)
-        x402-->>Backend: Payment confirmed
+        Backend->>Casper Network: Native Transfer to x402 Facilitator Address (e.g., 3 CSPR)
+        x402 Facilitator-->>Backend: Payment confirmed (Hash verified off-chain)
         Backend->>CSPRtrade: Request premium liquidity analysis
         CSPRtrade-->>Backend: Premium data
         Backend->>Gemini: Re-analyze with premium data
         Gemini-->>Backend: { confidence: 65 }
     end
     
-    Backend-->>Frontend: { logs, result: { score, recommendation } }
-    Frontend->>User: Display report
+    Backend->>Casper Network: Auto-Refund Native Transfer (Unspent Budget)
+    Backend-->>Frontend: { logs, result, financials, hashes }
+    Frontend->>User: Display report & Download .MD
 ```
 
 ---
@@ -135,5 +139,8 @@ Using `InstallConfig::upgradable()` in Odra 2.8 means the contract package hash 
 **Why CSPR.cloud REST as a fallback?**  
 Both the Casper MCP Server and CSPR.trade MCP require SSE (Server-Sent Events) for proper streaming handshakes. When the `fetch`-based client can't negotiate the SSE protocol, the agent falls back to the CSPR.cloud REST API — ensuring resilience without crashing.
 
-**Why autonomous x402 payments?**  
-The core innovation of the project. The agent decides *when* to spend money without human intervention — demonstrating true autonomy. The 80% confidence threshold makes this decision principled rather than arbitrary.
+**Why autonomous x402 payments via Native Transfers?**  
+The core innovation of the project. The agent decides *when* to spend money without human intervention — demonstrating true autonomy. Crucially, x402 payments on Casper are executed as **Native Transfers**, not complex smart contract calls. This minimizes gas fees and execution time. The x402 Facilitator listens off-chain to verify these transfers, acting as a highly efficient bridge to premium API data.
+
+**The Agentic Economy (Auto-Refund Mechanism)**  
+To build trust in an autonomous system, the user pays a "Maximum Budget" upfront. At the conclusion of the investigation, the agent calculates the exact cost incurred (base LLM cost + any x402 premium data fees + 30% platform margin) and automatically executes an on-chain Native Transfer to refund the unspent CSPR back to the user's wallet. This creates a fair, transparent, and sustainable economic model.

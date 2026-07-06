@@ -121,6 +121,9 @@ async function runInvestigation(target: string, type: string, deployHash: string
     logs.push('🧠 Agent: Analyzing collected data with LLM...');
     
     let aiAnalysis: any = {};
+    let llmPromptTrace = '';
+    let llmResponseTrace = '';
+
     try {
         const prompt = `You are Sentinel AI, an expert blockchain due-diligence agent.
 Analyze the following collected data for a project of type "${type}".
@@ -140,8 +143,11 @@ Provide your analysis strictly as a valid JSON object with the following schema:
 
 Output ONLY valid JSON, no markdown blocks or extra text.`;
 
+        llmPromptTrace = prompt;
         const response = await model.invoke(prompt);
         let content = response.content as string;
+        llmResponseTrace = content;
+        
         content = content.replace(/```json/g, '').replace(/```/g, '').trim();
         aiAnalysis = JSON.parse(content);
         logs.push(`🧠 Agent: AI Analysis complete. Confidence: ${aiAnalysis.confidence}%`);
@@ -308,7 +314,11 @@ Output ONLY valid JSON, no markdown blocks.`;
             ...premiumData,
         },
         financials: {},
-        hashes
+        hashes,
+        llmTrace: {
+            prompt: llmPromptTrace,
+            response: llmResponseTrace
+        }
     };
 
     // === STEP 5: Calculate Finances & Issue Refund ===

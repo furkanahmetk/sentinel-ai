@@ -9,6 +9,24 @@ interface InvestigationResult {
   recommendation: string;
   spent: number;
   details: Record<string, unknown>;
+  findings?: string[];
+  reasoning?: string;
+  financials?: {
+    collected?: number;
+    actualSpent?: number;
+    refunded?: number;
+    profitMargin?: number;
+  };
+  hashes?: {
+    initialPaymentHash?: string;
+    premiumX402Hash?: string;
+    refundHash?: string;
+    registryHash?: string;
+  };
+  llmTrace?: {
+    prompt?: string;
+    response?: string;
+  };
 }
 
 export default function Home() {
@@ -19,7 +37,7 @@ export default function Home() {
   const [result, setResult] = useState<InvestigationResult | null>(null);
   const [activeAccount, setActiveAccount] = useState<{ address: string, provider: string } | null>(null);
   const [copied, setCopied] = useState(false);
-  const [feeEstimate, setFeeEstimate] = useState<{ amount: number, message: string } | null>(null);
+  const [feeEstimate, setFeeEstimate] = useState<{ amount: number, message: string, breakdown?: any } | null>(null);
 
   useEffect(() => {
     const syncAccount = () => {
@@ -441,7 +459,11 @@ export default function Home() {
 - **Score:** ${result.score}/100
 - **Recommendation:** ${result.recommendation}
 
-## 2. Analysis Summary
+## 2. Detailed Analysis & Findings
+**Evaluated Criteria & Technical Findings:**
+${result.findings && result.findings.length > 0 ? result.findings.map((f: string) => `- ${f}`).join('\n') : '- No specific findings recorded.'}
+
+**Agent's Final Reasoning:**
 ${result.reasoning}
 
 ## 3. Financial Summary

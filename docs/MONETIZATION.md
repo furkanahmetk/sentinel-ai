@@ -14,7 +14,8 @@ The user pays this Maximum Budget upfront via a standard Casper Transfer.
 
 ## 2. Autonomous Agent Spending (x402)
 Once the budget is allocated, the AI agent begins its work. If the agent's confidence score drops below a certain threshold during the investigation, it will autonomously decide to purchase premium data.
-**The agent uses its own funded wallet (`agent_keys`)** to execute real on-chain transfers to the data publisher's address via the CSPR.cloud x402 Facilitator. The user is never prompted to sign these mid-investigation micro-payments, preserving true autonomy.
+**The agent uses its own funded wallet (`agent_keys`)** to execute real on-chain **Native Transfers** to the data publisher's address via the CSPR.cloud x402 Facilitator. 
+By utilizing standard Native Transfers instead of complex smart contract calls, the agent minimizes gas fees and ensures extremely fast settlement. The x402 Facilitator listens for these transfers off-chain and instantly grants API access. The user is never prompted to sign these mid-investigation micro-payments, preserving true autonomy.
 
 ## 3. The Auto-Refund Mechanism
 At the end of the investigation, the agent calculates the **Actual Cost** incurred (Base Cost + Premium Data Spent + 30% Margin).
