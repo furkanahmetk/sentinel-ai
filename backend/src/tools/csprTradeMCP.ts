@@ -17,7 +17,7 @@ async function getMcpSessionId(): Promise<string> {
         params: {
             protocolVersion: '2024-11-05',
             capabilities: {},
-            clientInfo: { name: 'sentinel-ai-backend', version: '1.0.0' }
+            clientInfo: { name: 'ulgen-ai-backend', version: '1.0.0' }
         }
     };
 

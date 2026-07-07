@@ -14,8 +14,8 @@ export function getLLM(opts: { temperature?: number } = {}) {
     configuration: {
       baseURL: "https://openrouter.ai/api/v1",
       defaultHeaders: {
-        "HTTP-Referer": "https://sentinel-ai.example.com",
-        "X-Title": "Sentinel AI",
+        "HTTP-Referer": "https://ulgen-ai.example.com",
+        "X-Title": "Ülgen AI",
       },
     },
   });

@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Sentinel AI — Autonomous Due Diligence Agent",
+  title: "Ülgen AI — Autonomous Due Diligence Agent",
   description: "AI-powered autonomous due diligence for DeFi and RWA projects on the Casper Network. Powered by CSPR.cloud MCP, x402 Facilitator, and Odra Framework.",
 };
 

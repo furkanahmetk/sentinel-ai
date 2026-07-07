@@ -29,7 +29,7 @@ export default function CsprClickProvider({ children }: { children: ReactNode })
     <ThemeProvider theme={theme}>
       <ClickProvider
         options={{
-          appName: process.env.NEXT_PUBLIC_CSPR_CLICK_APP_NAME || 'Sentinel AI',
+          appName: process.env.NEXT_PUBLIC_CSPR_CLICK_APP_NAME || 'Ülgen AI',
           appId: process.env.NEXT_PUBLIC_CSPR_CLICK_APP_ID || 'csprclick-template',
           contentMode: 'iframe',
           providers: ['casper-wallet', 'ledger', 'casperdash', 'metamask-snap'],

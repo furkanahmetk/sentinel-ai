@@ -1,5 +1,5 @@
 /**
- * Sentinel AI Backend — Casper AI Toolkit Powered
+ * Ülgen AI Backend — Casper AI Toolkit Powered
  * 
  * An autonomous AI agent that performs due diligence on Casper Network projects
  * using the full Casper AI Toolkit:
@@ -32,7 +32,7 @@ app.use(express.json());
 const model = getLLM({ temperature: 0.3 });
 
 /**
- * The Sentinel AI ReAct Agent Loop
+ * The Ülgen AI ReAct Agent Loop
  * 
  * Given an investigation target (URL, public key, contract hash), the agent:
  * 1. OBSERVES — Gathers free on-chain data via MCP tools
@@ -125,7 +125,7 @@ async function runInvestigation(target: string, type: string, deployHash: string
     let llmResponseTrace = '';
 
     try {
-        const prompt = `You are Sentinel AI, an expert blockchain due-diligence agent.
+        const prompt = `You are Ülgen AI, an expert blockchain due-diligence agent.
 Analyze the following collected data for a project of type "${type}".
 Target: ${target}
 
@@ -376,7 +376,7 @@ Output ONLY valid JSON, no markdown blocks or extra text.`;
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
-        service: 'Sentinel AI Backend',
+        service: 'Ülgen AI Backend',
         toolkit: 'Casper AI Toolkit',
         components: {
             llm: process.env.GOOGLE_API_KEY ? 'Gemini (connected)' : 'Not configured',
@@ -438,9 +438,9 @@ app.post('/api/investigate', async (req, res) => {
     }
 
     console.log(`\n${'='.repeat(60)}`);
-    console.log(`[Sentinel AI] New investigation: ${url} (Type: ${type})`);
-    console.log(`[Sentinel AI] Payment Hash: ${deployHash}`);
-    console.log(`[Sentinel AI] User: ${userAddress} | Fee: ${estimatedFee} CSPR`);
+    console.log(`[Ülgen AI] New investigation: ${url} (Type: ${type})`);
+    console.log(`[Ülgen AI] Payment Hash: ${deployHash}`);
+    console.log(`[Ülgen AI] User: ${userAddress} | Fee: ${estimatedFee} CSPR`);
     console.log(`${'='.repeat(60)}\n`);
 
     try {
@@ -451,7 +451,7 @@ app.post('/api/investigate', async (req, res) => {
         
         res.json({ logs, result });
     } catch (error: any) {
-        console.error('[Sentinel AI] Investigation failed:', error.message);
+        console.error('[Ülgen AI] Investigation failed:', error.message);
         res.status(500).json({
             logs: [`❌ Agent Error: ${error.message}`],
             error: error.message,
@@ -481,7 +481,7 @@ app.get('/api/x402/supported', async (req, res) => {
 
 
 app.listen(PORT, () => {
-    console.log(`\n🛡️  Sentinel AI Backend running on http://localhost:${PORT}`);
+    console.log(`\n🛡️  Ülgen AI Backend running on http://localhost:${PORT}`);
     console.log(`📡 Casper MCP: ${process.env.CASPER_MCP_URL || 'https://mcp.testnet.cspr.cloud/mcp'}`);
     console.log(`📊 CSPR.trade MCP: ${process.env.CSPR_TRADE_MCP_URL || 'https://mcp.cspr.trade/mcp'}`);
     console.log(`💰 x402 Facilitator: ${process.env.X402_FACILITATOR_URL || 'https://x402-facilitator.cspr.cloud'}`);
