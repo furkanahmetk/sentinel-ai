@@ -106,7 +106,7 @@ export async function simulateX402Payment(
         const verifyPayload = {
             paymentPayload: {
                 x402Version: 2,
-                resource: { url: `https://api.sentinel-ai.com/premium/${serviceDescription.replace(/\s+/g, '-').toLowerCase()}` },
+                resource: { url: `https://api.ulgen-ai.com/premium/${serviceDescription.replace(/\s+/g, '-').toLowerCase()}` },
                 accepted: {
                     scheme: "exact",
                     network: process.env.CASPER_CHAIN_NAME || "casper-test",
